@@ -6,8 +6,8 @@ import pytz
 
 # Configurações
 symbol = "WIN$"
-timeframe = mt5.TIMEFRAME_M1  # Timeframe de 1 minuto
-tolerancia = 0.10  # 10% de tolerância para amplitudes/mínimas/máximas
+timeframe = mt5.TIMEFRAME_M2  # Timeframe de 1 minuto
+tolerancia = 0.20  # 10% de tolerância para amplitudes/mínimas/máximas
 lote = 1  # Tamanho do lote (ajuste conforme sua conta)
 num_barras = 50000  # Número de barras para análise (1 min cada)
 
