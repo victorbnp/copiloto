@@ -1,6 +1,7 @@
 import MetaTrader5 as mt5
 import pandas as pd
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
+import pytz
 
 # ========== CONFIGURAÇÕES ==========
 ativo = "WIN$"  # ajuste conforme o símbolo no seu MT5
@@ -17,10 +18,59 @@ saldo_inicial = 1000.00  # R$ inicial
 if not mt5.initialize():
     raise RuntimeError("Erro ao conectar ao MetaTrader 5")
 
+
+def buscar_dados_em_blocos(ativo, timeframe, data_inicial, data_final):
+    """
+    Busca dados no MT5 em blocos mensais e junta tudo em um único DataFrame.
+    
+    ativo         -> símbolo no MT5, ex: "WINQ25"
+    timeframe     -> ex: mt5.TIMEFRAME_M1
+    data_inicial  -> datetime no fuso de São Paulo
+    data_final    -> datetime no fuso de São Paulo
+    """
+    
+    timezone = pytz.timezone("America/Sao_Paulo")
+    data_atual = data_inicial
+    todos_dados = []
+
+    while data_atual < data_final:
+        # Define intervalo de no máximo 30 dias
+        proximo_mes = min(data_atual + timedelta(days=30), data_final)
+        
+        # Converter para UTC
+        from_utc = timezone.localize(data_atual).astimezone(pytz.utc)
+        to_utc = timezone.localize(proximo_mes).astimezone(pytz.utc)
+        
+        # Buscar dados no MT5
+        dados = mt5.copy_rates_range(ativo, timeframe, from_utc, to_utc)
+        
+        if dados is not None and len(dados) > 0:
+            df = pd.DataFrame(dados)
+            df['time'] = pd.to_datetime(df['time'], unit='s')
+            todos_dados.append(df)
+        
+        # Avança para o próximo bloco
+        data_atual = proximo_mes
+
+    # Junta todos os blocos em um único DataFrame
+    if todos_dados:
+        df_final = pd.concat(todos_dados).drop_duplicates(subset=['time']).reset_index(drop=True)
+        return df_final
+    else:
+        return pd.DataFrame()
+
+
+
 # Função para carregar dados históricos
 def carregar_dados():
+
+    data_inicial = datetime(2024, 11, 26)
+    data_final = datetime(2025, 8, 13)
+    # Buscar dados
+    dados = buscar_dados_em_blocos(ativo, timeframe, data_inicial, data_final)    
+
     #dados = mt5.copy_rates_range(ativo, timeframe, data_inicio, data_fim)
-    dados = mt5.copy_rates_from_pos(ativo, timeframe, 0, 60000)
+    #dados = mt5.copy_rates_from_pos(ativo, timeframe, 0, 60000)
     df = pd.DataFrame(dados)
     df['time'] = pd.to_datetime(df['time'], unit='s')
     df.set_index('time', inplace=True)

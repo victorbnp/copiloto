@@ -17,15 +17,17 @@ if not mt5.initialize():
 
 ### Variáveis de inicialização ###    
 # Nome do setup
-setup = '3 barras'
+setup = 'grande barra'
 # Símbolo do ativo que vai operar
 simbolo = "WINV25"  
 # Timeframe a ser usado, pode ser alterado para M5, M15, H1 etc.
-timeframe = mt5.TIMEFRAME_M30
+timeframe = mt5.TIMEFRAME_M5
 # Número de velas para carregar
-num_barras = 5
+num_barras = 12
 # Número de contratos a ser usado para operar
 num_contratos = 1
+# Número de vezes que o corpo da barra tem que ser maior que a médias das ultimas barras
+multipicador_tamanho_corpo = 5
 # Horário para encerrar as negociações
 hora_fim_operacoes = 18
 # Horário da barra negociada
@@ -33,7 +35,7 @@ hora_entrada_operacao = None
 # Grava se o horário de encerrar o dia foi alcançado
 encerrar_dia = False 
 #Valor de stop de carteira
-valor_stop_carteira = 2000
+valor_stop_carteira = 1000
 
 
 def atualizar_operacao_saida(
@@ -285,6 +287,9 @@ while not encerrar_dia:
           (df['open'] == df['low']) & 
           (df['open'] == df['close']))]
 
+    #Calcula tamanho do corpo das barras
+    df['corpo'] = abs(df['close'] - df['open'])
+
     # Identifica se cada barra é compradora ou vendedora
     df['barra_compradora'] = df['close'] > df['open']
     df['barra_vendedora'] = df['close'] < df['open']
@@ -294,8 +299,23 @@ while not encerrar_dia:
     df['barra_vendedora_count'] = df['barra_vendedora'][:-1].rolling(window=3).sum() == 3
 
     # Marca se deve comprar, vender ou nada a fazer
-    deve_comprar = df['barra_compradora_count'].iloc[-2]
-    deve_vender = df['barra_vendedora_count'].iloc[-2]
+    deve_sair_venda = df['barra_compradora_count'].iloc[-2]
+    deve_sair_compra = df['barra_vendedora_count'].iloc[-2]
+
+    #corpo da ultima barra fechada
+    ultima_barra = df.iloc[-2]
+    #Média ultimas barras
+    media_ultimas_barras = df['corpo'][:-2].mean() * multipicador_tamanho_corpo
+
+    #inicializa variáreis de compra
+    deve_comprar = False
+    deve_vender = False
+
+    if (ultima_barra['corpo'] > media_ultimas_barras and ultima_barra['barra_compradora']):
+        deve_comprar = True
+    elif (ultima_barra['corpo'] > media_ultimas_barras and ultima_barra['barra_vendedora']):
+        deve_vender = True
+        
 
     #Consulta posições abertas
     posicoes = mt5.positions_get(symbol=simbolo)
@@ -353,7 +373,7 @@ while not encerrar_dia:
         hora_entrada_operacao = buscar_data_hora_entrada(posicoes[0].ticket,setup)
         hora_ultima_barra = df["time"].iloc[-1]
 
-        if posicoes[0].type == 0 and deve_vender and hora_entrada_operacao < hora_ultima_barra:
+        if posicoes[0].type == 0 and (deve_vender or deve_sair_compra) and hora_entrada_operacao < hora_ultima_barra:
             try:
                 retorno = encerra_todas_posicoes(simbolo)
                 atualizar_operacao_saida(
@@ -367,7 +387,7 @@ while not encerrar_dia:
             except Exception as e:
                 print(f"Erro ao abrir posiçao: {e}") 
             print('saiu compra: ', hora_ultima_barra)
-        elif posicoes[0].type == 1 and deve_comprar and hora_entrada_operacao < hora_ultima_barra:
+        elif posicoes[0].type == 1 and (deve_comprar or deve_sair_venda) and hora_entrada_operacao < hora_ultima_barra:
             try:
                 retorno = encerra_todas_posicoes(simbolo)
                 atualizar_operacao_saida(

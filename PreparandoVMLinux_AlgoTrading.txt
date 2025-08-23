@@ -1,0 +1,153 @@
+# Atualizar pacotes
+sudo apt update && sudo apt upgrade -y
+
+
+sudo apt install xubuntu-desktop -y
+sudo apt install  xrdp -y
+sudo systemctl enable xrdp
+sudo systemctl start xrdp
+
+echo "startxfce4" > ~/.xsession
+chmod +x ~/.xsession
+sudo systemctl restart xrdp
+
+# Instalar Wine (para rodar MetaTrader 5 no Linux)
+sudo dpkg --add-architecture i386
+sudo apt update
+sudo apt install wine64 wine32 -y
+
+*Instalar o MT5 
+Vá até a pasta home do usuario e crie uma pasta mt5
+E execute:
+wget https://download.mql5.com/cdn/web/metaquotes.software.corp/mt5/mt5ubuntu.sh ; chmod +x mt5ubuntu.sh ; ./mt5ubuntu.sh
+
+
+*Instalar o Visual code no linux
+Acesse o site do VS Code: https://code.visualstudio.com/
+Clique no botão "Download for Linux" e escolha o pacote .deb.
+
+Instale via terminal:
+Abra o terminal (Ctrl + Alt + T) e navegue até a pasta onde o arquivo foi baixado (geralmente ~/Downloads).
+
+Execute:
+bash
+sudo apt install ./code_*.deb
+Substitua code_*.deb pelo nome exato do arquivo baixado.
+
+*Instalar o pyhton
+Veja o WINEPREFIX que está no atalho do MetaTrader5 e use o mesmo
+
+wget https://www.python.org/ftp/python/3.10.11/python-3.10.11-amd64.exe -O python-installer.exe
+
+WINEPREFIX="/home/victor/.mt5" wine python-installer.exe
+Na instalação, marque: ✅ "Add Python to PATH"
+Continue a instalação normalmente.
+
+**Instalar runtime do visual studio para se comunicar com o meta trader 5 (MT5 precisa estar fechado)
+sudo apt install winetricks
+WINEPREFIX="/home/victor/.mt5" winetricks -q vcrun2015
+
+Entre no cmd do Wine:
+WINEPREFIX="/home/victor/.mt5" wine cmd
+
+pip install MetaTrader5
+
+python -c "import MetaTrader5 as mt5; print(mt5.initialize())"
+
+
+* criar um atalho funcional no Linux para o MT5
+
+nano ~/.local/share/applications/metatrader5.desktop
+
+Coloque:
+[Desktop Entry]
+Name=MetaTrader 5
+Exec=env WINEPREFIX="/home/victor/.mt5" wine "/home/victor/.mt5/drive_c/Program Files/MetaTrader 5/terminal64.exe"
+Type=Application
+StartupNotify=true
+Path=/home/victor/.mt5/drive_c/Program Files/MetaTrader 5/
+Icon=application-x-executable
+
+chmod +x ~/.local/share/applications/metatrader5.desktop
+
+
+
+*Colocar o VS Code para rodar o linux do Wine
+
+Descobrir o caminho do Python.exe do Wine
+No terminal Linux, rode:
+
+find ~/.mt5 -iname "python.exe"
+Substitua ~/.mt5 pelo prefixo onde instalou o MT5 e o Python no Wine.
+
+Isso vai te dar algo como:
+/home/victor/.mt5/drive_c/users/victor/AppData/Local/Programs/Python/Python310/python.exe
+
+no VS Code:
+
+Abra o Command Palette (Ctrl+Shift+P) → digite:
+Python: Select Interpreter
+Escolha "Enter interpreter path" e digite
+
+env WINEPREFIX="/home/victor/.mt5" wine C:\\users\\victor\\AppData\\Local\\Programs\\Python\\Python310\\python.exe
+
+Abra ou crie o arquivo .vscode/launch.json onde está seu arquivo.py
+adicione essa configuracao:
+
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python via Wine (MT5)",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "python": "env WINEPREFIX=\"/home/victor/.mt5\" wine C:\\users\\victor\\AppData\\Local\\Programs\\Python\\Python310\\python.exe",
+            "console": "integratedTerminal"
+        }
+    ]
+}
+
+Execute o código no terminal:
+env WINEPREFIX="/home/victor/.mt5" wine C:\\users\\victor\\AppData\\Local\\Programs\\Python\\Python310\\python.exe 3barras_app.py
+
+*Instalar o postgres 16
+sudo sh -c 'echo "deb https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+
+wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+
+sudo apt update
+
+sudo apt install -y postgresql-16 postgresql-client-16
+
+sudo systemctl start postgresql@16-main
+
+sudo systemctl enable postgresql@16-main
+
+sudo -u postgres psql
+
+Cria banco de dados
+CREATE DATABASE algo_trading;
+
+Entra no banco 
+\c algo_trading;
+
+Cria tabela
+CREATE TABLE IF NOT EXISTS public.tb_operacoes
+(
+    nr_id_pk serial NOT NULL,
+    dt_data_hora_entrada timestamp without time zone NOT NULL,
+    dt_data_hora_saida timestamp without time zone,
+    fl_preco_entrada numeric(10,4) NOT NULL,
+    fl_preco_saida numeric(10,4),
+    tx_simbolo character varying(10) COLLATE pg_catalog."default" NOT NULL,
+    tx_timeframe character varying(5) COLLATE pg_catalog."default" NOT NULL,
+    fl_resultado_bruto numeric(10,2),
+    tx_setup character varying(50) COLLATE pg_catalog."default" NOT NULL,
+    nr_quantidade_contratos integer NOT NULL,
+    ch_tipo_ordem "char" NOT NULL,
+    bl_operacao_encerrada boolean NOT NULL DEFAULT false,
+    nr_ticket bigint NOT NULL,
+    CONSTRAINT tb_operacoes_pkey PRIMARY KEY (nr_id_pk),
+    CONSTRAINT ck_tipo_ordem CHECK (ch_tipo_ordem = ANY (ARRAY['C'::"char", 'V'::"char"]))
+);
