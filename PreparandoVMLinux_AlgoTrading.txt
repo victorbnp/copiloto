@@ -7,6 +7,11 @@ sudo apt install  xrdp -y
 sudo systemctl enable xrdp
 sudo systemctl start xrdp
 
+*Criar usuario que vai acessar a area de trabalho remota
+sudo adduser victor
+sudo usermod -aG sudo victor
+
+* rode os comandos com o usuario criado
 echo "startxfce4" > ~/.xsession
 chmod +x ~/.xsession
 sudo systemctl restart xrdp
@@ -20,6 +25,9 @@ sudo apt install wine64 wine32 -y
 Vá até a pasta home do usuario e crie uma pasta mt5
 E execute:
 wget https://download.mql5.com/cdn/web/metaquotes.software.corp/mt5/mt5ubuntu.sh ; chmod +x mt5ubuntu.sh ; ./mt5ubuntu.sh
+
+*Para abrir o MT5 manualmente
+WINEPREFIX="/home/victor/.mt5" wine "/home/victor/.mt5/drive_c/Program Files/MetaTrader 5/terminal64.exe"
 
 
 *Instalar o Visual code no linux
@@ -44,13 +52,22 @@ Na instalação, marque: ✅ "Add Python to PATH"
 Continue a instalação normalmente.
 
 **Instalar runtime do visual studio para se comunicar com o meta trader 5 (MT5 precisa estar fechado)
+
 sudo apt install winetricks
+
 WINEPREFIX="/home/victor/.mt5" winetricks -q vcrun2015
+
+*Comando destrava tela de instalação
+WINEPREFIX="/home/victor/.mt5" wineserver -k
 
 Entre no cmd do Wine:
 WINEPREFIX="/home/victor/.mt5" wine cmd
 
+*Instalar modulos python
 pip install MetaTrader5
+pip install pandas
+pip install psycopg2-binary
+
 
 python -c "import MetaTrader5 as mt5; print(mt5.initialize())"
 
@@ -151,3 +168,42 @@ CREATE TABLE IF NOT EXISTS public.tb_operacoes
     CONSTRAINT tb_operacoes_pkey PRIMARY KEY (nr_id_pk),
     CONSTRAINT ck_tipo_ordem CHECK (ch_tipo_ordem = ANY (ARRAY['C'::"char", 'V'::"char"]))
 );
+
+*altera a senha do usario postgres
+ALTER USER postgres WITH PASSWORD 'vbnp8491V';
+
+*Ajustar fuso horário 
+sudo timedatectl set-timezone "America/Sao_Paulo"
+
+*Configure para nunca hibernar, desligar ou logout
+
+Desativar Suspensão e Hibernação
+No Xubuntu, isso é controlado pelo Xfce Power Manager.
+
+Via interface gráfica:
+	Vá em Menu → Configurações → Gerenciador de Energia.
+
+	Na aba Energia:
+		Quando inativo: selecione Nunca.
+		Quando a tampa for fechada (se for notebook): Não fazer nada.
+		Quando a energia da bateria acabar: Não fazer nada (se aplicável).
+
+	Na aba Monitor:
+		Colocar o monitor em repouso: Nunca.
+	Na aba Sistema:
+		Desmarque qualquer opção de “suspender” ou “hibernar”.
+
+Impedir bloqueio de tela automático
+	O Xubuntu usa o Xfce Screensaver para bloqueio.
+	Desative via interface gráfica:
+	Vá em Menu → Configurações → Protetor de Tela.
+
+	Desmarque:
+		Bloquear tela quando inativa.
+		Iniciar automaticamente.
+
+* como executar o arquivo pyhton no wine
+env WINEPREFIX="/home/victor/.mt5" wine C:\\users\\victor\\AppData\\Local\\Programs\\Python\\Python310\\python.exe /home/victor/Algotrading/3barras_app.py
+
+
+\q
