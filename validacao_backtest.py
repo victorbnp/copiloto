@@ -5,7 +5,7 @@ from tqdm import tqdm
 # ===============================
 # CONFIGURAÇÕES GERAIS
 # ===============================
-CSV_FILE = "WIN$_TF5_N5.00_20200815_20250815.csv"
+CSV_FILE = "backtest_WIN$_TF5_SMA89_ANG5_atr_scaled.csv"
 N_SIM_MONTE_CARLO = 5000
 INITIAL_CAPITAL = 4000
 WFA_SPLITS = 4  # número de janelas para Walk-Forward

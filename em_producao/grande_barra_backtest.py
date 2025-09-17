@@ -36,10 +36,10 @@ import pytz
 # =============================
 # ===== Parâmetros Gerais =====
 # =============================
-SYMBOL = "WIN$"               # Ajuste para o código vigente (ex.: WINQ25). Você pode automatizar se já tiver função pronta.
+SYMBOL = "WINV25"               # Ajuste para o código vigente (ex.: WINQ25). Você pode automatizar se já tiver função pronta.
 TIMEFRAME = MT5.TIMEFRAME_M5    # M1, M5, M15, etc.
-DT_START = datetime(2020, 8, 15) # Data inicial
-DT_END   = datetime(2025, 8, 15) # Data final (inclusiva na consulta; ver copyRatesRange)
+DT_START = datetime(2024, 8, 10) # Data inicial
+DT_END   = datetime(2025, 9, 11) # Data final (inclusiva na consulta; ver copyRatesRange)
 
 BIG_BODY_MULTIPLIERS = [5.0]    # Permite testar vários N (ex.: [4.0, 5.0, 6.0])
 ROLL_WINDOW = 10                # média dos últimos 10 corpos
@@ -120,15 +120,19 @@ def get_rates(symbol: str, timeframe, dt_start: datetime, dt_end: datetime) -> p
     # copyRatesRange inclui a barra do início e exclui a do fim? Depende da build.
     # Para segurança, adicionamos +1 dia no final e depois filtramos.
     # dt_end_plus = dt_end + timedelta(days=1)
+    # timezone = pytz.timezone("America/Sao_Paulo")
+    # dt_start = timezone.localize(dt_start).astimezone(pytz.utc)
+    # dt_end_plus = timezone.localize(dt_end_plus).astimezone(pytz.utc)
     # rates = MT5.copy_rates_range(symbol, timeframe, dt_start, dt_end_plus)
     # if rates is None or len(rates) == 0:
     #     raise RuntimeError(f"Sem dados para {symbol} no período solicitado. Erro: {MT5.last_error()}")
     # df = pd.DataFrame(rates)
+    # df['time'] = pd.to_datetime(df['time'], unit='s')
+    ###################
     df = buscar_dados_em_blocos(symbol,timeframe,dt_start,dt_end)
-    # time é epoch (segundos). Converte para datetime
-    #df['time'] = pd.to_datetime(df['time'], unit='s')
+
     # Filtra estritamente pelo intervalo desejado
-    df = df[(df['time'] >= dt_start) & (df['time'] <= dt_end)]
+    #df = df[(df['time'] >= dt_start) & (df['time'] <= dt_end)]
     df = df.reset_index(drop=True)
     # Normaliza preços ao step (por garantia)
     for col in ['open', 'high', 'low', 'close']:
